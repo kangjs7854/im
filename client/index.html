@@ -1,0 +1,112 @@
+<!--
+ * @Date: 2020-07-23 14:49:12
+ * @LastEditors: kjs
+ * @LastEditTime: 2020-07-23 15:39:13
+ * @FilePath: \im\client\index.html
+-->
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document</title>
+    <script src="https://cdn.jsdelivr.net/npm/vue/dist/vue.js"></script>
+    <script src="https://cdn.bootcss.com/axios/0.18.0/axios.min.js"></script>
+</head>
+
+<body>
+    <div id="app">
+        <ul>
+            <li v-for="(item,index) in arr" :key="index">
+                {{item}}
+            </li>
+        </ul>
+    </div>
+
+    <script>
+        const app = new Vue({
+            el: '#app',
+            data: {
+                arr:[]
+            },
+
+            created() {
+                //sse测试
+                // this.testSSE()
+
+                //短轮询测试
+                // let timer = setInterval(()=>{
+                //     this.testPolling()
+                // },2000)
+                // this.$on("hook:beforeDestroy",()=>{
+                //     clearInterval(timer)
+                // })
+
+                //长轮询测试
+                // this.testComet()
+
+                //websocket测试
+                this.testWebSocket()
+            },
+
+            methods: {
+                testSSE() {
+                    let sseInstanct = new EventSource("http://localhost:3000/sse")
+                    sseInstanct.onmessage = (event) => {
+                        console.log(JSON.parse(event.data));
+                        this.arr = JSON.parse(event.data)
+                    }
+                },
+
+                testPolling() {
+                    axios.get("http://localhost:3000/polling").then(res => {
+                        console.log(res);
+                        this.arr = res.data
+                    })
+                },
+
+                testComet() {
+                    axios.get("http://localhost:3000/comet")
+                        .then(res => {
+                            console.log(res);
+                        }).catch(error => {
+                            console.log(error);
+                        }).finally(() => {
+                            this.testComet()
+                        });
+                },
+
+                testCometByIframe() {
+                    const iframe = document.createElement('iframe')
+                    iframe.style.display = 'none'
+                    iframe.src = "http://localhost:3000/comet"
+                    document.body.appendChild(iframe);
+                    let getData = (data) => {
+                        console.log(data);
+                    }
+                },
+
+                testWebSocket() {
+                    const ws = new WebSocket('ws://localhost:8888');
+                    ws.onopen = ()=>{
+                        console.log("websocket已连接");
+                        ws.send("hi~可以给我发数据了")
+                    }
+
+                    ws.onmessage = (e)=>{
+                        console.log(e.data);
+                        this.arr = JSON.parse(e.data)
+                    }
+
+                    ws.onerror = ()=>{
+                        console.log("连接出错了");
+                    }
+                }
+
+            }
+        })
+    </script>
+</body>
+
+</html>
